@@ -2,61 +2,121 @@ package com.company;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Random;
 
 public class Main extends JPanel {
-    final int BF_WIDTH =567;
-    final int BF_HEIGHT =567;
+    final int BF_WIDTH = 567;
+    final int BF_HEIGHT = 567;
     final int OBJECT_SIZE = 64;
     final int UP = 1;
     final int DOWN = 2;
     final int LEFT = 3;
     final int RIGHT = 4;
+    final int TOP_Y = BF_HEIGHT - OBJECT_SIZE;
+    final int TOP_X = BF_WIDTH - OBJECT_SIZE;
 
-    String[][] objects= {
-            {"B","B","B","G","G","W","G","W","B"},
-            {"G","G","B","G","G","G","G","G","B"},
-            {"B","B","B","G","G","G","G","G","B"},
-            {"B","B","B","G","G","G","G","B","B"},
-            {"B","G","G","G","G","G","G","B","B"},
-            {"G","G","G","G","G","G","G","G","B"},
-            {"B","G","B","G","G","W","G","W","B"},
-            {"G","B","B","G","G","W","G","W","B"},
-            {"B","B","B","G","G","W","G","W","B"},
+    String[][] objects = {
+            {"B", "B", "B", "G", "G", "W", "G", "W", "B"},
+            {"G", "G", "B", "G", "G", "G", "G", "G", "B"},
+            {"B", "B", "B", "G", "G", "G", "G", "G", "B"},
+            {"B", "B", "B", "G", "G", "G", "G", "B", "B"},
+            {"B", "G", "G", "G", "G", "G", "G", "B", "B"},
+            {"G", "G", "G", "G", "G", "G", "G", "G", "B"},
+            {"B", "G", "B", "G", "G", "W", "G", "W", "B"},
+            {"G", "B", "B", "G", "G", "W", "G", "W", "B"},
+            {"B", "B", "B", "G", "G", "W", "G", "W", "B"},
     };
 
-    int direction = 1;
+    int direction = 4;
 
-    int bulletX =100;
-    int bulletY=100;
+    int bulletX = 100;
+    int bulletY = 100;
 
     int tankX = 256;
     int tankY = 256;
 
-    void move (int direction) throws Exception{
-        this.direction =direction;
+    void move(int direction) throws Exception {
+        this.direction = direction;
 
-        if(direction==1){
-            tankY--;
-        }else if (direction==2){
-            tankY++;
-        }else if (direction==3){
-            tankX--;
-        }else if(direction==4){
-            tankX++;
+        if (dontCanMove ()) {
+            System.out.println ( "Can't move!" );
+            fire ();
+            return;
         }
-        Thread.sleep ( 33 );
-        repaint ();
+        for (int i = 0; i < OBJECT_SIZE; i++) {
+
+            if (direction == 1) {
+                tankY--;
+            } else if (direction == 2) {
+                tankY++;
+            } else if (direction == 3) {
+                tankX--;
+            } else if (direction == 4) {
+                tankX++;
+            }
+            Thread.sleep ( 33 );
+            repaint ();
+        }
+        moveToQuadrant ( 0,0 );
     }
+
+    void moveToQuadrant(int x, int y){
+    }
+
+    void moveRandom()throws Exception{
+        Random random = new Random ();
+        int direction =random.nextInt (4)+1;
+        move ( direction );
+    }
+
+    boolean dontCanMove(){
+        return (direction == UP && tankY == 0) || (direction == DOWN && tankY == TOP_Y)
+                || (direction == LEFT && tankX == 0) || (direction == RIGHT && tankX == TOP_X)
+                || nextObject ( direction ).equals ( "B" );
+
+    }
+
+    String nextObject(int direction){
+        int y = tankY/OBJECT_SIZE;
+        int x = tankX/OBJECT_SIZE;
+
+        switch (direction){
+            case UP:
+                y-=64;
+                break;
+            case DOWN:
+                y+=64;
+                break;
+            case LEFT:
+                x-=64;
+                break;
+            case RIGHT:
+                x+=64;
+                break;
+        }
+        return objects[y/OBJECT_SIZE][x/OBJECT_SIZE];
+    }
+
+    boolean processInterception() {
+        int y = bulletY/64;
+        int x = bulletX/64;
+        if(objects[y][x].equals ("B")){
+            objects[x][y]="G";
+            return true;
+        }
+        return false;
+    }
+
     void fire() throws Exception{
-        bulletX =tankX +25;
-        bulletY = tankY +25;
+        bulletX = tankX + 25;
+        bulletY = tankY + 25;
         while (bulletX > 0 && bulletX < BF_WIDTH && bulletY > 0 && bulletY < BF_HEIGHT){
            switch (direction){
                case 1:
-                   bulletY--;
+                   bulletY-=64;
                    break;
                case 2:
-                   bulletY++;
+                   bulletY+=64;
                    break;
                case 3:
                    bulletX--;
@@ -65,22 +125,26 @@ public class Main extends JPanel {
                    bulletX++;
                    break;
            }
+            if(processInterception ()){
+              destoyBullet ();
+            }
            Thread.sleep ( 10 );
             repaint ();
         }
-        bulletX =-100;
-        bulletY =-100;
+        destoyBullet ();
+    }
+
+    void destoyBullet(){
+        bulletX=-100;
+        bulletY=-100;
         repaint ();
     }
 
     void runTheGame () throws Exception{
         while (true) {
-            fire ();
+             moveRandom ();
         }
-//        while (tankX != 0) {
-//            move ( LEFT );
- //       }
-        }
+    }
     public static void main(String[] args) throws Exception{
         Main main=new Main  ();
         main.runTheGame ();
@@ -115,15 +179,6 @@ public class Main extends JPanel {
                 g.fillRect ( x * OBJECT_SIZE, y*OBJECT_SIZE, OBJECT_SIZE, OBJECT_SIZE );
             }
         }
-
-//            if (objects[i].equals ( "B" )){
-//
-//            }else if (objects[i].equals ( "W" )){
-//
-//            }else if (objects[i].equals ( "G" )){
-//
-//            }
-
         g.setColor ( Color.GRAY );
         g.fillRect ( tankX,tankY,OBJECT_SIZE,OBJECT_SIZE );
         g.setColor ( Color.MAGENTA );
